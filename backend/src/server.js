@@ -12,7 +12,7 @@ const { syncShopifyForTenant } = require("./shopifySync");
 const app = express();
 
 // ---------- CORS CONFIG ----------
-const allowedOrigins = [
+const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "https://xeno-shopify-4bzq.onrender.com",      // frontend on Render
   "https://xenofde-aryan.myshopify.com"          // your Shopify store
@@ -22,7 +22,7 @@ app.use(
   cors({
     origin(origin, callback) {
       // allow server-to-server (no origin) + known frontends
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
         callback(null, true);
       } else {
         callback(null, false);
@@ -100,8 +100,7 @@ app.post("/api/events/custom", authMiddleware, async (req, res) => {
 });
 
 /**
- * Cart abandoned event (authenticated version)
- * Body: { shopCustomerId?, cartValue?, items? }
+ * Cart abandoned event (authenticated)
  */
 app.post("/api/events/cart-abandoned", authMiddleware, async (req, res) => {
   try {
@@ -127,8 +126,7 @@ app.post("/api/events/cart-abandoned", authMiddleware, async (req, res) => {
 });
 
 /**
- * Checkout started event (authenticated version)
- * Body: { shopCustomerId?, cartValue?, items? }
+ * Checkout started event (authenticated)
  */
 app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
   try {
@@ -277,7 +275,6 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
 
 /**
  * Recent funnel events (for bonus section)
- * GET /api/events/recent
  */
 app.get("/api/events/recent", authMiddleware, async (req, res) => {
   try {
@@ -318,14 +315,12 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
 
 /**
  * Metrics summary with date range + event funnel
- * GET /api/metrics/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
 app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
   try {
     const tenantId = req.user.tenantId;
     const { startDate, endDate } = req.query;
 
-    // Orders date filter
     const orderWhere = { tenantId };
     if (startDate || endDate) {
       orderWhere.orderDate = {};
@@ -337,7 +332,6 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     }
 
-    // Event date filter
     const eventWhereBase = { tenantId };
     const eventDateFilter = {};
     if (startDate || endDate) {
