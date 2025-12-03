@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id              Int          @id @default(autoincrement())
+  name            String
+  shopDomain      String       @unique
+  shopAccessToken String
+  users           User[]
+  customers       Customer[]
+  products        Product[]
+  orders          Order[]
+  events          CustomEvent[]
+  createdAt       DateTime     @default(now())
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId     Int
+  createdAt    DateTime @default(now())
+}
+
+model Customer {
+  id             Int      @id @default(autoincrement())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId       Int
+  shopCustomerId String
+  firstName      String?
+  lastName       String?
+  email          String?
+  totalSpent     Float    @default(0)
+  createdAt      DateTime @default(now())
+  orders         Order[]
+
+  @@unique([tenantId, shopCustomerId])
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId      Int
+  shopProductId String
+  title         String
+  sku           String?
+  price         Float?
+  createdAt     DateTime @default(now())
+  items         OrderItem[]
+
+  @@unique([tenantId, shopProductId])
+}
+
+model Order {
+  id          Int       @id @default(autoincrement())
+  tenantId    Int
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  shopOrderId String
+
+  // --- Finance fields (Shopify-compatible) ---
+  grossSales  Float     @default(0)  // total_line_items_price
+  discounts   Float     @default(0)  // total_discounts
+  returns     Float     @default(0)  // refunds value
+  taxes       Float     @default(0)  // total_tax
+  shipping    Float     @default(0)  // sum(shipping_lines[].price)
+  totalSales  Float     @default(0)  // gross - discounts - returns + taxes + shipping
+
+  // For convenience – what UI already uses
+  totalPrice  Float     @default(0)  // keep as copy of totalSales
+  currency    String
+  orderDate   DateTime
+
+  customerId  Int?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
+  items       OrderItem[]
+
+  @@unique([tenantId, shopOrderId])
+  @@index([tenantId, orderDate])
+}
+
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product? @relation(fields: [productId], references: [id])
+  productId Int?
+  quantity  Int
+  price     Float
+}
+
+enum CustomEventType {
+  CART_ABANDONED
+  CHECKOUT_STARTED
+  CHECKOUT_COMPLETED
+  OTHER
+}
+
+model CustomEvent {
+  id             Int            @id @default(autoincrement())
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  tenantId       Int
+  eventType      CustomEventType
+  shopCustomerId String?
+  payload        Json?
+  createdAt      DateTime       @default(now())
+}

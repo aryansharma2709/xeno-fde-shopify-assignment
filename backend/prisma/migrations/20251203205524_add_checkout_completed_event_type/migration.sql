@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CustomEventType" ADD VALUE 'CHECKOUT_COMPLETED';
