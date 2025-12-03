@@ -13,7 +13,7 @@ const { syncShopifyForTenant } = require("./shopifySync");
 // ---------- CORS SETUP ----------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://xeno-insights-frontend.onrender.com" // <- tumhara frontend URL
+  "https://xeno-shopify-4bzq.onrender.com" 
 ];
 
 const corsOptions = {
