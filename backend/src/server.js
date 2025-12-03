@@ -1,6 +1,5 @@
 // src/server.js
 require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
 const cron = require("node-cron");
@@ -10,34 +9,19 @@ const prisma = new PrismaClient();
 const { authMiddleware, registerHandler, loginHandler } = require("./auth");
 const { syncShopifyForTenant } = require("./shopifySync");
 
-// ---------- CORS SETUP ----------
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://xeno-shopify-4bzq.onrender.com" 
-];
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Postman / server-to-server ke liye origin null hota hai
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  }
-};
-
 const app = express();
 
+// ---------- CORS CONFIG ----------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://xeno-shopify-4bzq.onrender.com",      // your frontend on Render
-  "https://xenofde-aryan.myshopify.com"          // your Shopify store domain
+  "https://xeno-shopify-4bzq.onrender.com",      // frontend on Render
+  "https://xenofde-aryan.myshopify.com"          // your Shopify store
 ];
 
 app.use(
   cors({
     origin(origin, callback) {
-      // allow server-to-server / curl (no origin) and the origins above
+      // allow server-to-server (no origin) + known frontends
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -172,7 +156,6 @@ app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
 /**
  * PUBLIC ingest endpoints for Shopify Custom Pixel (no JWT)
  */
-
 app.post("/api/public/events/checkout-started", async (req, res) => {
   try {
     const { shopDomain, checkoutId, cartValue, currency, items } = req.body || {};
@@ -181,7 +164,9 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
+    const tenant = await prisma.tenant.findFirst({
+      where: { shopDomain }
+    });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -212,20 +197,16 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
 
 app.post("/api/public/events/checkout-completed", async (req, res) => {
   try {
-    const {
-      shopDomain,
-      checkoutId,
-      orderId,
-      orderValue,
-      currency,
-      items
-    } = req.body || {};
+    const { shopDomain, checkoutId, orderId, orderValue, currency, items } =
+      req.body || {};
 
     if (!shopDomain) {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
+    const tenant = await prisma.tenant.findFirst({
+      where: { shopDomain }
+    });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -263,7 +244,9 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
+    const tenant = await prisma.tenant.findFirst({
+      where: { shopDomain }
+    });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -311,7 +294,7 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
       take: 10
     });
 
-    const shaped = events.map(e => {
+    const shaped = events.map((e) => {
       const payload = e.payload || {};
       const items = Array.isArray(payload.items) ? payload.items : [];
 
@@ -321,11 +304,7 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
         createdAt: e.createdAt,
         shopCustomerId: e.shopCustomerId,
         cartValue:
-          typeof payload.cartValue === "number"
-            ? payload.cartValue
-            : typeof payload.orderValue === "number"
-            ? payload.orderValue
-            : null,
+          typeof payload.cartValue === "number" ? payload.cartValue : null,
         itemsCount: items.length
       };
     });
@@ -339,6 +318,7 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
 
 /**
  * Metrics summary with date range + event funnel
+ * GET /api/metrics/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
 app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
   try {
@@ -357,7 +337,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     }
 
-    // Events date filter
+    // Event date filter
     const eventWhereBase = { tenantId };
     const eventDateFilter = {};
     if (startDate || endDate) {
@@ -410,7 +390,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     });
 
-    const ordersWithCustomer = orders.filter(o => o.customerId !== null);
+    const ordersWithCustomer = orders.filter((o) => o.customerId !== null);
     const customerOrderCounts = new Map();
     for (const o of ordersWithCustomer) {
       customerOrderCounts.set(
@@ -419,7 +399,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       );
     }
     const repeatCustomers = [...customerOrderCounts.values()].filter(
-      c => c > 1
+      (c) => c > 1
     ).length;
     const repeatCustomerRate = ordersWithCustomer.length
       ? (repeatCustomers / customerOrderCounts.size) * 100
