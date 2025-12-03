@@ -27,7 +27,29 @@ const corsOptions = {
 };
 
 const app = express();
-app.use(cors(corsOptions));
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://xeno-shopify-4bzq.onrender.com",      // your frontend on Render
+  "https://xenofde-aryan.myshopify.com"          // your Shopify store domain
+];
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // allow server-to-server / curl (no origin) and the origins above
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
