@@ -1,4 +1,34 @@
 // src/server.js
+// src/server.js
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const cron = require("node-cron");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
+const { authMiddleware, registerHandler, loginHandler } = require("./auth");
+const { syncShopifyForTenant } = require("./shopifySync");
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https:xeno-shopify-4bzq.onrender.com", 
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Postman / server-to-server ke liye origin null hota hai
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+};
+
+const app = express();
+app.use(cors(corsOptions));
+app.use(express.json());
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
