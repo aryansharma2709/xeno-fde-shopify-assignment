@@ -1,6 +1,6 @@
 // src/server.js
-// src/server.js
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const cron = require("node-cron");
@@ -10,9 +10,10 @@ const prisma = new PrismaClient();
 const { authMiddleware, registerHandler, loginHandler } = require("./auth");
 const { syncShopifyForTenant } = require("./shopifySync");
 
+// ---------- CORS SETUP ----------
 const allowedOrigins = [
   "http://localhost:3000",
-  "https:xeno-shopify-4bzq.onrender.com", 
+  "https://xeno-insights-frontend.onrender.com" // <- tumhara frontend URL
 ];
 
 const corsOptions = {
@@ -22,25 +23,11 @@ const corsOptions = {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
-  },
+  }
 };
 
 const app = express();
 app.use(cors(corsOptions));
-app.use(express.json());
-
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const cron = require("node-cron");
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
-const { authMiddleware, registerHandler, loginHandler } = require("./auth");
-const { syncShopifyForTenant } = require("./shopifySync");
-
-const app = express();
-app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
@@ -80,7 +67,7 @@ app.post("/api/sync/shopify", authMiddleware, async (req, res) => {
 });
 
 /**
- * Generic custom event endpoint (authenticated, used by your own app)
+ * Generic custom event endpoint (authenticated)
  * Body: { eventType, shopCustomerId?, payload? }
  */
 app.post("/api/events/custom", authMiddleware, async (req, res) => {
@@ -162,12 +149,6 @@ app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
 
 /**
  * PUBLIC ingest endpoints for Shopify Custom Pixel (no JWT)
- * Body (checkout-started):
- *   { shopDomain, checkoutId?, cartValue?, currency?, items? }
- * Body (checkout-completed):
- *   { shopDomain, checkoutId?, orderId?, orderValue?, currency?, items? }
- * Body (cart-abandoned) – optional future use:
- *   { shopDomain, cartToken?, cartValue?, currency?, items? }
  */
 
 app.post("/api/public/events/checkout-started", async (req, res) => {
@@ -178,9 +159,7 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
+    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -211,16 +190,20 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
 
 app.post("/api/public/events/checkout-completed", async (req, res) => {
   try {
-    const { shopDomain, checkoutId, orderId, orderValue, currency, items } =
-      req.body || {};
+    const {
+      shopDomain,
+      checkoutId,
+      orderId,
+      orderValue,
+      currency,
+      items
+    } = req.body || {};
 
     if (!shopDomain) {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
+    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -258,9 +241,7 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
+    const tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
 
     if (!tenant) {
       return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
@@ -289,11 +270,6 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
   }
 });
 
-
-/**
- * Recent custom events for debugging / bonus UI
- * GET /api/events/recent?limit=20
- */
 /**
  * Recent funnel events (for bonus section)
  * GET /api/events/recent
@@ -306,20 +282,15 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
       where: {
         tenantId,
         eventType: {
-          in: [
-            "CHECKOUT_STARTED",
-            "CART_ABANDONED",
-            "CHECKOUT_COMPLETED" // bonus event
-          ]
+          in: ["CHECKOUT_STARTED", "CART_ABANDONED", "CHECKOUT_COMPLETED"]
         }
       },
       orderBy: { createdAt: "desc" },
       take: 10
     });
 
-    // Thoda cleaned-up payload bhej dete hain
-    const shaped = events.map((e) => {
-      const payload = (e.payload || {});
+    const shaped = events.map(e => {
+      const payload = e.payload || {};
       const items = Array.isArray(payload.items) ? payload.items : [];
 
       return {
@@ -328,7 +299,11 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
         createdAt: e.createdAt,
         shopCustomerId: e.shopCustomerId,
         cartValue:
-          typeof payload.cartValue === "number" ? payload.cartValue : null,
+          typeof payload.cartValue === "number"
+            ? payload.cartValue
+            : typeof payload.orderValue === "number"
+            ? payload.orderValue
+            : null,
         itemsCount: items.length
       };
     });
@@ -340,30 +315,27 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
   }
 });
 
-
 /**
  * Metrics summary with date range + event funnel
- * GET /api/metrics/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
-
 app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
   try {
     const tenantId = req.user.tenantId;
     const { startDate, endDate } = req.query;
 
-    // Date filter for orders
+    // Orders date filter
     const orderWhere = { tenantId };
     if (startDate || endDate) {
       orderWhere.orderDate = {};
       if (startDate) orderWhere.orderDate.gte = new Date(startDate);
       if (endDate) {
         const d = new Date(endDate);
-        d.setDate(d.getDate() + 1); // inclusive
+        d.setDate(d.getDate() + 1);
         orderWhere.orderDate.lte = d;
       }
     }
 
-    // Date filter for events
+    // Events date filter
     const eventWhereBase = { tenantId };
     const eventDateFilter = {};
     if (startDate || endDate) {
@@ -384,15 +356,12 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
     });
 
     const totalOrders = orders.length;
-
-    // Use totalSales (Shopify-style) if available, else totalPrice
     const totalRevenue = orders.reduce(
       (sum, o) => sum + (o.totalSales ?? o.totalPrice ?? 0),
       0
     );
     const averageOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
 
-    // Orders by date
     const ordersByDateMap = {};
     for (const o of orders) {
       const key = o.orderDate.toISOString().slice(0, 10);
@@ -406,7 +375,6 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       a.date.localeCompare(b.date)
     );
 
-    // Top customers (global by totalSpent)
     const topCustomers = await prisma.customer.findMany({
       where: { tenantId },
       orderBy: { totalSpent: "desc" },
@@ -420,8 +388,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     });
 
-    // Repeat customer rate
-    const ordersWithCustomer = orders.filter((o) => o.customerId !== null);
+    const ordersWithCustomer = orders.filter(o => o.customerId !== null);
     const customerOrderCounts = new Map();
     for (const o of ordersWithCustomer) {
       customerOrderCounts.set(
@@ -430,13 +397,12 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       );
     }
     const repeatCustomers = [...customerOrderCounts.values()].filter(
-      (c) => c > 1
+      c => c > 1
     ).length;
     const repeatCustomerRate = ordersWithCustomer.length
       ? (repeatCustomers / customerOrderCounts.size) * 100
       : 0;
 
-    // Custom events – funnel
     const checkoutStartedCount = await prisma.customEvent.count({
       where: {
         ...eventWhereBase,
@@ -453,7 +419,6 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     });
 
-    // Explicit cart-abandoned events (if any)
     const explicitCartAbandonedCount = await prisma.customEvent.count({
       where: {
         ...eventWhereBase,
@@ -462,7 +427,6 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       }
     });
 
-    // Derived: checkouts that did not convert to completed checkout
     const derivedCartAbandonedCount = Math.max(
       checkoutStartedCount - checkoutCompletedCount,
       0
