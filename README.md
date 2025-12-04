@@ -35,7 +35,6 @@ It connects to a Shopify store via the Admin API, syncs customers & orders into 
 
 **High-level flow**
 
-```text
 Shopify Store
   ├─ Admin API (orders, customers)
   └─ Custom Pixel (checkout events)
