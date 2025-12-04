@@ -3,12 +3,13 @@
     "version": "1.0.0",
     "main": "src/server.js",
     "scripts": {
-      "dev": "nodemon src/server.js",
-      "start": "node src/server.js",
-      "prisma:generate": "npx prisma generate",
-      "prisma:migrate": "npx prisma migrate dev --name init",
-      "prisma:migrate:deploy": "npm run prisma:migrate"
+        "dev": "nodemon src/server.js",
+        "start": "node src/server.js",
+        "prisma:migrate:dev": "npx prisma migrate dev --name init",
+        "prisma:migrate:deploy": "npx prisma migrate deploy",
+        "prisma:generate": "npx prisma generate"
     },
+    
     "dependencies": {
       "@prisma/client": "^5.14.0",
       "axios": "^1.7.0",
