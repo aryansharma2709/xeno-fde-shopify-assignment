@@ -11,26 +11,10 @@ const { syncShopifyForTenant } = require("./shopifySync");
 
 const app = express();
 
-// ---------- CORS CONFIG ----------
-const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "https://xeno-shopify-4bzq.onrender.com",      // frontend on Render
-  "https://xenofde-aryan.myshopify.com"          // your Shopify store
-];
-
+// Simple CORS for everything (no cookies used anywhere)
 app.use(
   cors({
-    origin(origin, callback) {
-      // allow server-to-server (no origin) + known frontends
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    origin: "*",
   })
 );
 
@@ -73,7 +57,7 @@ app.post("/api/sync/shopify", authMiddleware, async (req, res) => {
 });
 
 /**
- * Generic custom event endpoint (authenticated)
+ * Generic custom event endpoint (authenticated, used by your own app)
  * Body: { eventType, shopCustomerId?, payload? }
  */
 app.post("/api/events/custom", authMiddleware, async (req, res) => {
@@ -88,8 +72,8 @@ app.post("/api/events/custom", authMiddleware, async (req, res) => {
         tenantId: req.user.tenantId,
         eventType,
         shopCustomerId: shopCustomerId || null,
-        payload: payload || null
-      }
+        payload: payload || null,
+      },
     });
 
     res.status(201).json({ event });
@@ -100,7 +84,8 @@ app.post("/api/events/custom", authMiddleware, async (req, res) => {
 });
 
 /**
- * Cart abandoned event (authenticated)
+ * Cart abandoned event (authenticated version)
+ * Body: { shopCustomerId?, cartValue?, items? }
  */
 app.post("/api/events/cart-abandoned", authMiddleware, async (req, res) => {
   try {
@@ -113,9 +98,9 @@ app.post("/api/events/cart-abandoned", authMiddleware, async (req, res) => {
         shopCustomerId: shopCustomerId || null,
         payload: {
           cartValue: cartValue || 0,
-          items: items || []
-        }
-      }
+          items: items || [],
+        },
+      },
     });
 
     res.status(201).json({ event });
@@ -126,7 +111,8 @@ app.post("/api/events/cart-abandoned", authMiddleware, async (req, res) => {
 });
 
 /**
- * Checkout started event (authenticated)
+ * Checkout started event (authenticated version)
+ * Body: { shopCustomerId?, cartValue?, items? }
  */
 app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
   try {
@@ -139,9 +125,9 @@ app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
         shopCustomerId: shopCustomerId || null,
         payload: {
           cartValue: cartValue || 0,
-          items: items || []
-        }
-      }
+          items: items || [],
+        },
+      },
     });
 
     res.status(201).json({ event });
@@ -153,7 +139,31 @@ app.post("/api/events/checkout-started", authMiddleware, async (req, res) => {
 
 /**
  * PUBLIC ingest endpoints for Shopify Custom Pixel (no JWT)
+ * Body (checkout-started):
+ *   { shopDomain, checkoutId?, cartValue?, currency?, items? }
+ * Body (checkout-completed):
+ *   { shopDomain, checkoutId?, orderId?, orderValue?, currency?, items? }
+ * Body (cart-abandoned):
+ *   { shopDomain, cartToken?, cartValue?, currency?, items? }
  */
+
+async function resolveTenantFromShopDomain(shopDomain) {
+  let tenant = await prisma.tenant.findFirst({ where: { shopDomain } });
+
+  // Single-tenant fallback so assignment doesn't break if domain mismatch
+  if (!tenant) {
+    tenant = await prisma.tenant.findFirst();
+    console.warn(
+      "[public event] Unknown shopDomain, falling back to first tenant:",
+      shopDomain,
+      "-> tenantId:",
+      tenant?.id
+    );
+  }
+
+  return tenant;
+}
+
 app.post("/api/public/events/checkout-started", async (req, res) => {
   try {
     const { shopDomain, checkoutId, cartValue, currency, items } = req.body || {};
@@ -162,12 +172,9 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
-
+    const tenant = await resolveTenantFromShopDomain(shopDomain);
     if (!tenant) {
-      return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
+      return res.status(400).json({ error: "No tenant found" });
     }
 
     const event = await prisma.customEvent.create({
@@ -179,9 +186,9 @@ app.post("/api/public/events/checkout-started", async (req, res) => {
           checkoutId: checkoutId || null,
           cartValue: cartValue || 0,
           currency: currency || "INR",
-          items: items || []
-        }
-      }
+          items: items || [],
+        },
+      },
     });
 
     res.status(201).json({ status: "ok", id: event.id });
@@ -202,12 +209,9 @@ app.post("/api/public/events/checkout-completed", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
-
+    const tenant = await resolveTenantFromShopDomain(shopDomain);
     if (!tenant) {
-      return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
+      return res.status(400).json({ error: "No tenant found" });
     }
 
     const event = await prisma.customEvent.create({
@@ -220,9 +224,9 @@ app.post("/api/public/events/checkout-completed", async (req, res) => {
           orderId: orderId || null,
           orderValue: orderValue || 0,
           currency: currency || "INR",
-          items: items || []
-        }
-      }
+          items: items || [],
+        },
+      },
     });
 
     res.status(201).json({ status: "ok", id: event.id });
@@ -242,12 +246,9 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
       return res.status(400).json({ error: "Missing shopDomain" });
     }
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { shopDomain }
-    });
-
+    const tenant = await resolveTenantFromShopDomain(shopDomain);
     if (!tenant) {
-      return res.status(400).json({ error: "Unknown shopDomain", shopDomain });
+      return res.status(400).json({ error: "No tenant found" });
     }
 
     const event = await prisma.customEvent.create({
@@ -259,9 +260,9 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
           cartToken: cartToken || null,
           cartValue: cartValue || 0,
           currency: currency || "INR",
-          items: items || []
-        }
-      }
+          items: items || [],
+        },
+      },
     });
 
     res.status(201).json({ status: "ok", id: event.id });
@@ -274,7 +275,24 @@ app.post("/api/public/events/cart-abandoned", async (req, res) => {
 });
 
 /**
+ * DEBUG route – see last 20 events quickly
+ */
+app.get("/api/debug/events", async (_req, res) => {
+  try {
+    const events = await prisma.customEvent.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+    res.json({ count: events.length, events });
+  } catch (err) {
+    console.error("Debug events error:", err);
+    res.status(500).json({ error: "Error fetching debug events" });
+  }
+});
+
+/**
  * Recent funnel events (for bonus section)
+ * GET /api/events/recent
  */
 app.get("/api/events/recent", authMiddleware, async (req, res) => {
   try {
@@ -284,11 +302,11 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
       where: {
         tenantId,
         eventType: {
-          in: ["CHECKOUT_STARTED", "CART_ABANDONED", "CHECKOUT_COMPLETED"]
-        }
+          in: ["CHECKOUT_STARTED", "CART_ABANDONED", "CHECKOUT_COMPLETED"],
+        },
       },
       orderBy: { createdAt: "desc" },
-      take: 10
+      take: 10,
     });
 
     const shaped = events.map((e) => {
@@ -302,7 +320,9 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
         shopCustomerId: e.shopCustomerId,
         cartValue:
           typeof payload.cartValue === "number" ? payload.cartValue : null,
-        itemsCount: items.length
+        orderValue:
+          typeof payload.orderValue === "number" ? payload.orderValue : null,
+        itemsCount: items.length,
       };
     });
 
@@ -315,6 +335,7 @@ app.get("/api/events/recent", authMiddleware, async (req, res) => {
 
 /**
  * Metrics summary with date range + event funnel
+ * GET /api/metrics/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
 app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
   try {
@@ -348,7 +369,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
 
     const orders = await prisma.order.findMany({
       where: orderWhere,
-      orderBy: { orderDate: "asc" }
+      orderBy: { orderDate: "asc" },
     });
 
     const totalOrders = orders.length;
@@ -380,8 +401,8 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
         firstName: true,
         lastName: true,
         email: true,
-        totalSpent: true
-      }
+        totalSpent: true,
+      },
     });
 
     const ordersWithCustomer = orders.filter((o) => o.customerId !== null);
@@ -403,24 +424,24 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       where: {
         ...eventWhereBase,
         ...eventDateFilter,
-        eventType: "CHECKOUT_STARTED"
-      }
+        eventType: "CHECKOUT_STARTED",
+      },
     });
 
     const checkoutCompletedCount = await prisma.customEvent.count({
       where: {
         ...eventWhereBase,
         ...eventDateFilter,
-        eventType: "CHECKOUT_COMPLETED"
-      }
+        eventType: "CHECKOUT_COMPLETED",
+      },
     });
 
     const explicitCartAbandonedCount = await prisma.customEvent.count({
       where: {
         ...eventWhereBase,
         ...eventDateFilter,
-        eventType: "CART_ABANDONED"
-      }
+        eventType: "CART_ABANDONED",
+      },
     });
 
     const derivedCartAbandonedCount = Math.max(
@@ -449,7 +470,7 @@ app.get("/api/metrics/summary", authMiddleware, async (req, res) => {
       checkoutStartedCount,
       checkoutCompletedCount,
       cartAbandonedCount,
-      checkoutToOrderConversion
+      checkoutToOrderConversion,
     });
   } catch (err) {
     console.error("Metrics error:", err);
