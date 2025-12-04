@@ -34,7 +34,7 @@ It connects to a Shopify store via the Admin API, syncs customers & orders into 
 - **Shopify:** Admin REST API + Custom Pixel (for checkout events)
 
 **High-level flow**
-
+```text
 Shopify Store
   ├─ Admin API (orders, customers)
   └─ Custom Pixel (checkout events)
@@ -51,6 +51,7 @@ Next.js Frontend (Xeno Insights Dashboard)
 
 Multi-tenancy is implemented using a tenantId column on core tables (Tenant, User, Customer, Order, CustomEvent).
 All API calls are scoped to the tenant decoded from the JWT token.
+
 
 
 ## 🖥️ Frontend – Xeno Insights Dashboard
@@ -168,14 +169,6 @@ CustomEvent – checkout funnel events
 │   └── package.json
 │
 └── README.md
-
-
-
-<img width="1850" height="858" alt="image" src="https://github.com/user-attachments/assets/7cd5f9da-9f37-46ff-928b-1a86b929c3ca" />
-
-<img width="1462" height="857" alt="image" src="https://github.com/user-attachments/assets/15d438a9-f221-441e-94f6-4f7be868df76" />
-
-<img width="1412" height="573" alt="image" src="https://github.com/user-attachments/assets/5ab0f2e9-6d0f-4474-bef0-0d4f19f6e03d" />
 
 
 
