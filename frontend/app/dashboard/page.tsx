@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import {
   LineElement,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import RecentEventsCard from "./RecentEventsCard";
@@ -20,7 +22,8 @@ ChartJS.register(
   PointElement,
   LineElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const API_BASE_URL =
@@ -50,7 +53,7 @@ type MetricsResponse = {
   topCustomers: TopCustomer[];
   checkoutStartedCount: number;
   cartAbandonedCount: number;
-  checkoutCompletedCount: number; // ✅ bonus metric
+  checkoutCompletedCount: number;
   checkoutToOrderConversion: number;
 };
 
@@ -145,18 +148,86 @@ export default function Dashboard() {
           {
             label: "Revenue",
             data: metrics.ordersByDate.map((o) => o.revenue),
-            borderWidth: 2,
-            tension: 0.3,
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34, 197, 94, 0.18)",
+            borderWidth: 3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#22c55e",
+            pointBorderColor: "#22c55e",
+            tension: 0.35,
+            fill: true,
           },
           {
             label: "Orders",
             data: metrics.ordersByDate.map((o) => o.orders),
-            borderWidth: 2,
-            tension: 0.3,
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.18)",
+            borderWidth: 3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#38bdf8",
+            pointBorderColor: "#38bdf8",
+            tension: 0.35,
+            yAxisID: "y2",
           },
         ],
       }
     : null;
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: "#e5e7eb",
+          boxWidth: 10,
+          font: { size: 11 },
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(15,23,42,0.97)",
+        borderColor: "rgba(148,163,184,0.7)",
+        borderWidth: 1,
+        titleColor: "#f9fafb",
+        bodyColor: "#e5e7eb",
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#9ca3af",
+        },
+        grid: {
+          color: "rgba(148,163,184,0.18)",
+          drawBorder: false,
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: "#9ca3af",
+        },
+        grid: {
+          color: "rgba(148,163,184,0.18)",
+          drawBorder: false,
+        },
+      },
+      y2: {
+        position: "right" as const,
+        beginAtZero: true,
+        ticks: {
+          color: "#9ca3af",
+        },
+        grid: {
+          drawOnChartArea: false,
+          drawBorder: false,
+        },
+      },
+    },
+  };
 
   return (
     <main>
@@ -209,7 +280,6 @@ export default function Dashboard() {
           </div>
 
           <div className="sidebar-footer">
-          
             <button
               className="btn-ghost"
               style={{ width: "100%" }}
@@ -312,24 +382,8 @@ export default function Dashboard() {
                 </div>
 
                 {chartData && chartData.labels.length > 0 ? (
-                  <div style={{ marginTop: 12 }}>
-                    <Line
-                      data={chartData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: "bottom",
-                            labels: { boxWidth: 10, font: { size: 11 } },
-                          },
-                        },
-                        scales: {
-                          y: { beginAtZero: true },
-                        },
-                      }}
-                      height={220}
-                    />
+                  <div style={{ marginTop: 12, height: 260 }}>
+                    <Line data={chartData} options={chartOptions} />
                   </div>
                 ) : (
                   <p className="small mt-2">
@@ -347,8 +401,8 @@ export default function Dashboard() {
                   <div>
                     <h3>Checkout Funnel (Custom Events)</h3>
                     <p className="small">
-  Events captured from your store&apos;s checkout flow.
-</p>
+                      Events captured from your store&apos;s checkout flow.
+                    </p>
                   </div>
                 </div>
 
@@ -370,9 +424,7 @@ export default function Dashboard() {
                   </div>
                   <div className="card-ghost" style={{ flex: "1 1 180px" }}>
                     <div className="small">Checkout → Order Conversion</div>
-                    <h2>
-                      {metrics.checkoutToOrderConversion.toFixed(1)}%
-                    </h2>
+                    <h2>{metrics.checkoutToOrderConversion.toFixed(1)}%</h2>
                   </div>
                 </div>
               </div>
@@ -455,7 +507,7 @@ export default function Dashboard() {
                   </table>
                 </div>
 
-                {/* Bonus: recent events timeline */}
+                {/* Recent funnel events card */}
                 <div style={{ flex: "1 1 260px", minWidth: 260 }}>
                   <RecentEventsCard />
                 </div>
