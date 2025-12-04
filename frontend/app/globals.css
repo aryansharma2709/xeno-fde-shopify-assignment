@@ -1,5 +1,9 @@
 /* app/globals.css */
 
+/* =========================
+   Base reset & globals
+   ========================= */
+
 *,
 *::before,
 *::after {
@@ -8,16 +12,27 @@
 
 :root {
   color-scheme: dark;
+  --bg-main: #020617;
+  --bg-elevated: #020617;
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.12);
+  --accent-alt: #22d3ee;
+  --border-subtle: rgba(148, 163, 184, 0.25);
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-soft: #64748b;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top left, #4ade80 0, transparent 50%),
-    radial-gradient(circle at bottom right, #22d3ee 0, transparent 50%),
-    #020617;
-  color: #e5e7eb;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.23) 0, transparent 55%),
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.2) 0, transparent 55%),
+    var(--bg-main);
 }
 
 a {
@@ -28,34 +43,60 @@ a {
 main {
   min-height: 100vh;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
+  padding: 24px;
 }
 
-/* Layout */
+/* =========================
+   Layout shell
+   ========================= */
 
 .app-shell {
+  position: relative;
   display: flex;
   width: 100%;
   max-width: 1200px;
-  margin: 24px auto;
-  border-radius: 24px;
+  border-radius: 26px;
   overflow: hidden;
-  backdrop-filter: blur(18px);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  backdrop-filter: blur(22px);
+  background: radial-gradient(circle at top, #020617, #000814);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
 }
 
-/* Sidebar */
+/* subtle glowing outline */
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 200deg,
+    rgba(34, 197, 94, 0.7),
+    rgba(56, 189, 248, 0.7),
+    rgba(14, 165, 233, 0.4),
+    rgba(34, 197, 94, 0.7)
+  );
+  opacity: 0.14;
+  filter: blur(26px);
+  z-index: -1;
+}
+
+/* =========================
+   Sidebar
+   ========================= */
 
 .sidebar {
-  width: 260px;
-  background: linear-gradient(to bottom, #020617, #0b1120);
-  padding: 24px 20px;
-  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  width: 270px;
+  background: radial-gradient(circle at top, #020617, #020617 45%, #020617);
+  padding: 22px 20px 20px;
+  border-right: 1px solid rgba(30, 64, 175, 0.45);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
+  box-shadow: 20px 0 60px rgba(15, 23, 42, 0.8);
 }
 
 .sidebar-logo {
@@ -65,16 +106,19 @@ main {
 }
 
 .logo-badge {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
-  background: conic-gradient(from 180deg, #4ade80, #22d3ee, #4ade80);
+  background:
+    radial-gradient(circle at 20% 20%, #f97316, transparent 40%),
+    conic-gradient(from 180deg, #22c55e, #22d3ee, #4ade80, #22c55e);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 18px;
   color: #020617;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9);
 }
 
 .sidebar-title {
@@ -84,14 +128,14 @@ main {
 
 .sidebar-subtitle {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-soft);
 }
 
 .sidebar-section-title {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--text-soft);
   margin-bottom: 6px;
 }
 
@@ -106,59 +150,88 @@ main {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  padding: 8px 10px;
+  padding: 8px 11px;
   border-radius: 999px;
   cursor: pointer;
   color: #cbd5f5;
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.1s ease,
+    box-shadow 0.16s ease;
+}
+
+.nav-item:hover {
+  background: rgba(30, 64, 175, 0.55);
+  border-color: rgba(37, 99, 235, 0.7);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.85);
+  transform: translateY(-1px);
 }
 
 .nav-item.active {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.6);
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.14),
+    rgba(56, 189, 248, 0.06)
+  );
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 10px 26px rgba(34, 197, 94, 0.35);
 }
 
 .nav-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  background: #22c55e;
+  background: radial-gradient(circle, #4ade80, #16a34a);
 }
 
 .sidebar-footer {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-soft);
   margin-top: auto;
+  line-height: 1.5;
 }
 
-/* Main content */
+/* =========================
+   Main content
+   ========================= */
 
 .app-main {
   flex: 1;
-  background: radial-gradient(circle at top, rgba(34, 197, 94, 0.1), transparent 45%),
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 45%),
+    radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.15), transparent 50%),
     #020617;
-  padding: 20px 24px 24px 24px;
+  padding: 20px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* Cards */
+/* =========================
+   Cards
+   ========================= */
 
 .card {
-  background: rgba(15, 23, 42, 0.92);
-  border-radius: 16px;
-  padding: 18px 18px 16px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: radial-gradient(circle at 10% 0, #0f172a, #020617 55%);
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
 }
 
 .card-ghost {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 14px;
-  padding: 10px 10px 8px 10px;
-  border: 1px solid rgba(51, 65, 85, 0.7);
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 16px;
+  padding: 10px 12px 8px;
+  border: 1px solid rgba(51, 65, 85, 0.75);
 }
 
-/* Typography */
+/* =========================
+   Typography
+   ========================= */
 
 h1,
 h2,
@@ -168,6 +241,7 @@ h3 {
 
 h1 {
   font-size: 22px;
+  letter-spacing: 0.01em;
 }
 
 h2 {
@@ -180,32 +254,34 @@ h3 {
 
 .small {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
-/* Inputs & buttons */
+/* =========================
+   Inputs & buttons
+   ========================= */
 
 input {
   width: 100%;
   padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid #1f2937;
-  background-color: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  background-color: rgba(15, 23, 42, 0.96);
+  color: var(--text-main);
   font-size: 13px;
 }
 
 input:focus {
   outline: none;
-  border-color: #22c55e;
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.7);
 }
 
 label {
   font-size: 12px;
   margin-bottom: 4px;
   display: block;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 button {
@@ -215,7 +291,11 @@ button {
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
-  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.08s;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    opacity 0.08s,
+    filter 0.12s ease;
 }
 
 button:active {
@@ -223,19 +303,35 @@ button:active {
   box-shadow: none;
 }
 
+/* Primary button */
 .btn-primary {
-  background: linear-gradient(to right, #22c55e, #22d3ee);
+  background: radial-gradient(circle at top left, #22c55e, #16a34a);
   color: #020617;
-  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.45);
 }
 
+.btn-primary:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(34, 197, 94, 0.6);
+}
+
+/* Ghost button (Logout, etc.) */
 .btn-ghost {
   background-color: transparent;
-  border: 1px solid #1e293b;
-  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  color: var(--text-main);
 }
 
-/* Utility */
+.btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(148, 163, 184, 0.85);
+  transform: translateY(-1px);
+}
+
+/* =========================
+   Utilities
+   ========================= */
 
 .flex {
   display: flex;
@@ -275,7 +371,9 @@ button:active {
   margin-top: 4px;
 }
 
-/* Table */
+/* =========================
+   Tables
+   ========================= */
 
 .table {
   width: 100%;
@@ -283,170 +381,74 @@ button:active {
   margin-top: 8px;
 }
 
+.table thead {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+}
+
 .table th,
 .table td {
-  border-bottom: 1px solid rgba(51, 65, 85, 0.8);
-  padding: 6px 4px;
+  padding: 0.6rem 0.4rem;
   font-size: 11px;
 }
 
 .table th {
   text-align: left;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
+.table tbody tr:nth-child(odd) {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.table tbody tr:hover {
+  background: rgba(51, 65, 85, 0.9);
+}
+
+/* Chips / badges (e.g. “Last 10”, data points) */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  justify-content: center;
+  padding: 0.25rem 0.8rem;
   border-radius: 999px;
-  background-color: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(51, 65, 85, 0.9);
-  font-size: 11px;
-  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.9);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-main);
 }
 
-/* Auth layout for / */
+/* =========================
+   Auth page layout
+   ========================= */
 
 .auth-wrapper {
   max-width: 420px;
   margin: 40px auto;
 }
 
-/* === Visual polish overrides === */
-
-/* Shell background – subtle gradient */
-.app-shell {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, #0f172a 0, #020617 40%, #000 100%);
+.auth-card {
+  background: radial-gradient(circle at top, #020617, #020617 55%, #020617);
+  padding: 20px 20px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.9);
 }
 
-/* Sidebar cards */
-.sidebar {
-  border-right: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 20px 0 60px rgba(15, 23, 42, 0.6);
-}
+/* =========================
+   Recent funnel events
+   ========================= */
 
-/* KPI & generic cards */
-.card {
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.7));
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
-}
-
-/* Ghost cards (lighter secondary blocks) */
-.card-ghost {
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.7);
-}
-
-/* Primary button */
-.btn-primary {
-  border-radius: 999px;
-  padding: 0.55rem 1.4rem;
-  font-weight: 500;
-  background: radial-gradient(circle at top left, #22c55e, #16a34a);
-  border: none;
-  color: #0f172a;
-  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
-}
-
-.btn-primary:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.55);
-}
-
-/* Ghost button (Logout, etc.) */
-.btn-ghost {
-  border-radius: 999px;
-  padding: 0.5rem 1.2rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: transparent;
-  color: #e5e7eb;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-}
-
-.btn-ghost:hover {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.6);
-  transform: translateY(-1px);
-}
-
-/* Sidebar nav items */
-.nav-item {
-  border-radius: 999px;
-  padding: 0.45rem 0.9rem;
-  gap: 0.55rem;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-.nav-item:hover {
-  background: rgba(51, 65, 85, 0.7);
-  transform: translateY(-1px);
-}
-
-.nav-item.active {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.03));
-  border: 1px solid rgba(34, 197, 94, 0.65);
-}
-
-/* Little status dot in nav */
-.nav-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: radial-gradient(circle, #4ade80, #22c55e);
-}
-
-/* Tables – zebra + hover */
-.table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.table thead {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-}
-
-.table th,
-.table td {
-  padding: 0.6rem 0.4rem;
-}
-
-.table tbody tr:nth-child(odd) {
-  background: rgba(15, 23, 42, 0.7);
-}
-
-.table tbody tr:nth-child(even) {
-  background: rgba(15, 23, 42, 0.4);
-}
-
-.table tbody tr:hover {
-  background: rgba(51, 65, 85, 0.85);
-}
-
-/* Badges used for small chips (e.g. data points, Last 10 etc.) */
-.badge {
-  padding: 0.25rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.8);
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-/* Recent events list – keep typography tight */
 .recent-events-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
   font-size: 0.85rem;
 }
 
@@ -456,13 +458,62 @@ button:active {
   gap: 0.5rem;
 }
 
-/* Make event type pill-ish */
+/* Pill for event type */
 .event-pill {
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.25);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
+/* =========================
+   Responsive tweaks
+   ========================= */
+
+@media (max-width: 960px) {
+  main {
+    padding: 16px;
+  }
+
+  .app-shell {
+    flex-direction: column;
+    max-width: 100%;
+    border-radius: 22px;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    border-right: none;
+    border-bottom: 1px solid rgba(30, 64, 175, 0.55);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.9);
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .app-main {
+    padding: 18px 16px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 12px;
+  }
+
+  .sidebar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recent-event-row {
+    grid-template-columns: 1.5fr 1.1fr;
+    row-gap: 0.25rem;
+  }
+}
