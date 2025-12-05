@@ -562,4 +562,10 @@ If this were taken to production, next iterations would include:
 
 ---
 <img width="1850" height="858" alt="Screenshot 2025-12-04 203737" src="https://github.com/user-attachments/assets/1499aaa6-192e-4dc8-88dc-1aaeb8047574" />
+<img width="1462" height="857" alt="Screenshot 2025-12-04 203804" src="https://github.com/user-attachments/assets/42d8a560-91b1-4f80-ad8a-687e8788a219" />
+<img width="1412" height="573" alt="Screenshot 2025-12-04 203832" src="https://github.com/user-attachments/assets/f6676fd7-fe15-4ff5-99ed-2954f231bd60" />
+<img width="1919" height="960" alt="Screenshot 2025-12-04 164639" src="https://github.com/user-attachments/assets/d3abbbbc-b4cb-48f8-a37a-4704cab63a14" />
+
+
+
 
