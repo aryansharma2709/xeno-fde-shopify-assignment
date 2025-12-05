@@ -1,97 +1,78 @@
-Xeno Insights – Shopify Analytics Dashboard (FDE Assignment)
+# Xeno Insights – Shopify Analytics Dashboard (FDE Assignment)
 
-A full-stack Shopify analytics dashboard built for the Xeno FDE Internship Assignment.
+A full-stack **Shopify analytics dashboard** built for the **Xeno FDE Internship Assignment**.
 
-It connects to a Shopify store via the Admin API, syncs customers & orders into a multi-tenant PostgreSQL warehouse, and exposes a modern dashboard that shows:
+It connects to a Shopify store via the **Admin API**, syncs **customers & orders** into a **multi-tenant PostgreSQL warehouse**, and exposes a modern dashboard that shows:
 
-Customers, orders & revenue over time
+* Customers, orders & revenue over time
+* Orders by date, top customers, AOV
+* A checkout funnel powered by **custom events** (`CHECKOUT_STARTED`, `CHECKOUT_COMPLETED`, `CART_ABANDONED`)
+* A **“Recent funnel events”** timeline for debugging the pixel / funnel
 
-Orders by date, top customers, AOV
+---
 
-A checkout funnel powered by custom events (CHECKOUT_STARTED, CHECKOUT_COMPLETED, CART_ABANDONED)
+## 🔗 Live URLs
 
-A “Recent funnel events” timeline for debugging the pixel / funnel
+* **Frontend (Next.js)** – `https://xeno-shopify-4bzq.onrender.com`
+* **Backend API (Node/Express)** – `https://xeno-fde-shopify-backend.onrender.com`
 
-🔗 Live URLs
+---
 
-Frontend (Next.js) – https://xeno-shopify-4bzq.onrender.com
+## ✨ Key Features
 
-Backend API (Node/Express) – https://xeno-fde-shopify-backend.onrender.com
+* Email/password **tenant login & registration**
+* **Multi-tenant** data model (one Shopify store per tenant, scoped by `tenantId`)
+* **Manual + scheduled** sync from Shopify Admin API into Postgres
+* KPI cards:
 
-✨ Key Features
+  * Total Customers
+  * Total Orders
+  * Total Revenue (₹)
+  * Average Order Value (AOV)
+  * Repeat Customer Rate (%)
+* **Revenue & Orders Trend** chart (Chart.js)
+* **Checkout Funnel**:
 
-Email/password tenant login & registration
+  * Checkouts Started
+  * Cart Abandoned
+  * Checkouts Completed
+  * Checkout → Order Conversion (%)
+* **Orders by Date** table
+* **Top 5 Customers by Spend** table with smart naming
+* **Recent funnel events** card (last 10 custom events)
+* Dark **glassmorphism UI** with neon accents and responsive layout
 
-Multi-tenant data model (one Shopify store per tenant, scoped by tenantId)
+---
 
-Manual + scheduled sync from Shopify Admin API into Postgres
+## 🧩 Tech Stack
 
-KPI cards:
+**Frontend**
 
-  Total Customers
+* Next.js (App Router) + React
+* TypeScript
+* Chart.js + `react-chartjs-2`
+* Custom CSS in `globals.css`
 
-  Total Orders
+**Backend**
 
-  Total Revenue (₹)
+* Node.js + Express
+* Prisma ORM
+* PostgreSQL (multi-tenant)
+* JSON Web Tokens (JWT) for auth
+* `node-cron` for scheduled Shopify syncs
 
-  Average Order Value (AOV)
+**Shopify**
 
-  Repeat Customer Rate (%)
+* Admin REST API (customers, orders)
+* Shopify **Custom Pixel** for checkout / cart events
 
-  Revenue & Orders Trend chart (Chart.js)
+---
 
-Checkout Funnel:
-
-  Checkouts Started
-
-  Cart Abandoned
-
-  Checkouts Completed
-
-  Checkout → Order Conversion (%)
-
-  Orders by Date table
-
-Top 5 Customers by Spend table with smart naming
-
-Recent funnel events card (last 10 custom events)
-
-Dark glassmorphism UI with neon accents and responsive layout
-
-🧩 Tech Stack
-
-Frontend
-
-Next.js (App Router) + React
-
-TypeScript
-
-Chart.js + react-chartjs-2
-
-Custom CSS in globals.css
-
-Backend
-
-Node.js + Express
-
-Prisma ORM
-
-PostgreSQL (multi-tenant)
-
-JSON Web Tokens (JWT) for auth
-
-node-cron for scheduled Shopify syncs
-
-Shopify
-
-Admin REST API (customers, orders)
-
-Shopify Custom Pixel for checkout / cart events
-
-🏗 Architecture Overview
+## 🏗 Architecture Overview
 
 High-level flow:
 
+```text
 Shopify Store
   ├─ Admin API (orders, customers)
   └─ Custom Pixel (checkout events)
@@ -105,19 +86,20 @@ Node/Express Backend
 PostgreSQL (multi-tenant: Tenant, User, Customer, Order, CustomEvent)
         ↓
 Next.js Frontend (Xeno Insights Dashboard)
+```
 
+**Multi-tenancy**
 
-Multi-tenancy
+* `Tenant` – one row per Shopify store (`shopDomain`, Admin token, etc.)
+* `User` – belongs to a `tenantId`
+* `Customer`, `Order`, `CustomEvent` – all include `tenantId`
+* Every authed API call reads `tenantId` from the JWT and scopes queries accordingly.
 
-Tenant – one row per Shopify store (shopDomain, Admin token, etc.)
+---
 
-User – belongs to a tenantId
+## 🗂 Folder Structure
 
-Customer, Order, CustomEvent – all include tenantId
-
-Every authed API call reads tenantId from the JWT and scopes queries accordingly.
-
-🗂 Folder Structure
+```text
 .
 ├── backend/
 │   ├── prisma/
@@ -142,12 +124,16 @@ Every authed API call reads tenantId from the JWT and scopes queries accordingly
 │   └── package.json
 │
 └── README.md
+```
 
-🧬 Data Model & DB Schema (Simplified)
+---
 
-Actual schema is in backend/prisma/schema.prisma.
-Simplified view of the core models:
+## 🧬 Data Model & DB Schema (Simplified)
 
+Actual schema is in `backend/prisma/schema.prisma`.
+Simplified view of the **core models**:
+
+```prisma
 model Tenant {
   id                Int       @id @default(autoincrement())
   shopDomain        String    @unique
@@ -203,68 +189,60 @@ model CustomEvent {
   payload       Json?    // cartValue, currency, items, checkoutId, orderId, ...
   createdAt     DateTime @default(now())
 }
+```
 
-🌐 API Endpoints
-Auth & Tenant Onboarding
+---
 
-POST /api/auth/register
+## 🌐 API Endpoints
 
-Body:
+### Auth & Tenant Onboarding
 
-email (string)
+**`POST /api/auth/register`**
 
-password (string)
+* Body:
 
-shopDomain (string, e.g. my-store.myshopify.com)
+  * `email` (string)
+  * `password` (string)
+  * `shopDomain` (string, e.g. `my-store.myshopify.com`)
+  * `shopifyAccessToken` (string – Admin API token)
+* Creates:
 
-shopifyAccessToken (string – Admin API token)
+  * a `Tenant` row,
+  * a `User` row, and
+  * returns a **JWT**.
 
-Creates:
+**`POST /api/auth/login`**
 
-a Tenant row,
+* Body:
 
-a User row, and
+  * `email`, `password`
+* Returns:
 
-returns a JWT.
+  * `token` (JWT), which encodes `userId` & `tenantId`.
 
-POST /api/auth/login
+### Shopify Sync
 
-Body:
+**`POST /api/sync/shopify`**
 
-email, password
+* Auth: `Authorization: Bearer <JWT>`
+* Uses tenant’s `shopDomain` & `shopifyAccessToken` to:
 
-Returns:
+  * Fetch customers & orders from Shopify Admin API
+  * Upsert `Customer` & `Order` rows in Postgres
+* Also scheduled by `node-cron` for background syncs.
 
-token (JWT), which encodes userId & tenantId.
+### Metrics & Dashboard
 
-Shopify Sync
+**`GET /api/metrics/summary`**
 
-POST /api/sync/shopify
+* Auth: `Authorization: Bearer <JWT>`
+* Query params:
 
-Auth: Authorization: Bearer <JWT>
+  * `startDate` (optional, YYYY-MM-DD)
+  * `endDate` (optional, YYYY-MM-DD; inclusive)
+* Returns:
 
-Uses tenant’s shopDomain & shopifyAccessToken to:
-
-Fetch customers & orders from Shopify Admin API
-
-Upsert Customer & Order rows in Postgres
-
-Also scheduled by node-cron for background syncs.
-
-Metrics & Dashboard
-
-GET /api/metrics/summary
-
-Auth: Authorization: Bearer <JWT>
-
-Query params:
-
-startDate (optional, YYYY-MM-DD)
-
-endDate (optional, YYYY-MM-DD; inclusive)
-
-Returns:
-
+```ts
 {
   totalCustomers: number;
   totalOrders: number;
@@ -288,14 +266,14 @@ Returns:
   checkoutCompletedCount: number;
   checkoutToOrderConversion: number;
 }
+```
 
+**`GET /api/events/recent`**
 
-GET /api/events/recent
+* Auth: `Authorization: Bearer <JWT>`
+* Returns last 10 funnel events for the tenant:
 
-Auth: Authorization: Bearer <JWT>
-
-Returns last 10 funnel events for the tenant:
-
+```ts
 {
   events: {
     id: number;
@@ -306,27 +284,27 @@ Returns last 10 funnel events for the tenant:
     itemsCount: number;
   }[];
 }
+```
 
-Internal Custom Event APIs (Authed, optional)
+### Internal Custom Event APIs (Authed, optional)
 
 These are generic custom event endpoints (for internal use):
 
-POST /api/events/custom
+* `POST /api/events/custom`
+* `POST /api/events/cart-abandoned`
+* `POST /api/events/checkout-started`
 
-POST /api/events/cart-abandoned
+In this project, the **public pixel endpoints** below are the ones used by Shopify.
 
-POST /api/events/checkout-started
+### Public Checkout Funnel Ingest (Shopify Custom Pixel)
 
-In this project, the public pixel endpoints below are the ones used by Shopify.
+These do **not** require JWT; they identify the tenant by `shopDomain`.
 
-Public Checkout Funnel Ingest (Shopify Custom Pixel)
+**`POST /api/public/events/checkout-started`**
 
-These do not require JWT; they identify the tenant by shopDomain.
+* Body example:
 
-POST /api/public/events/checkout-started
-
-Body example:
-
+```json
 {
   "shopDomain": "xenofde-aryan.myshopify.com",
   "checkoutId": "123",
@@ -336,14 +314,15 @@ Body example:
     { "sku": "snowboard-1", "title": "The Collection Snowboard: Hydrogen", "quantity": 1 }
   ]
 }
+```
 
+* Creates `CustomEvent` with `eventType = "CHECKOUT_STARTED"`.
 
-Creates CustomEvent with eventType = "CHECKOUT_STARTED".
+**`POST /api/public/events/checkout-completed`**
 
-POST /api/public/events/checkout-completed
+* Body example:
 
-Body example:
-
+```json
 {
   "shopDomain": "xenofde-aryan.myshopify.com",
   "checkoutId": "123",
@@ -352,137 +331,123 @@ Body example:
   "currency": "USD",
   "items": [ ... ]
 }
+```
 
+* Creates `CustomEvent` with `eventType = "CHECKOUT_COMPLETED"`.
 
-Creates CustomEvent with eventType = "CHECKOUT_COMPLETED".
+**`POST /api/public/events/cart-abandoned`**
 
-POST /api/public/events/cart-abandoned
+* Optional future use; same pattern, creates `CART_ABANDONED` events.
 
-Optional future use; same pattern, creates CART_ABANDONED events.
+### Health
 
-Health
+**`GET /health`**
 
-GET /health
+* Returns `{ status: "ok" }` – used by Render / uptime checks.
 
-Returns { status: "ok" } – used by Render / uptime checks.
+---
 
-🖥 Frontend – Xeno Insights Dashboard
-Auth Screen
+## 🖥 Frontend – Xeno Insights Dashboard
 
-Email/password login & registration
+### Auth Screen
 
-On register, user also submits:
+* Email/password login & registration
+* On register, user also submits:
 
-shopDomain
+  * `shopDomain`
+  * `Admin API token`
+* On success, JWT is stored in `localStorage` and reused for all API calls.
 
-Admin API token
+### Dashboard Sections
 
-On success, JWT is stored in localStorage and reused for all API calls.
+1. **Performance Overview**
 
-Dashboard Sections
+   * KPI cards: customers, orders, revenue, AOV, repeat customer rate
+   * Date range selector (From / To) → drives `/api/metrics/summary`
 
-Performance Overview
+2. **Revenue & Orders Trend**
 
-KPI cards: customers, orders, revenue, AOV, repeat customer rate
+   * Line chart using Chart.js
+   * Two datasets: revenue & orders
+   * X-axis = date; Y-axis = metric
+   * Uses `ordersByDate` array from backend
 
-Date range selector (From / To) → drives /api/metrics/summary
+3. **Checkout Funnel (Custom Events)**
 
-Revenue & Orders Trend
+   * Cards for:
 
-Line chart using Chart.js
+     * Checkouts Started
+     * Cart Abandoned
+     * Checkouts Completed
+     * Checkout → Order Conversion (%)
+   * Counts computed in backend using aggregated `CustomEvent`s.
 
-Two datasets: revenue & orders
+4. **Orders by Date**
 
-X-axis = date; Y-axis = metric
+   * Table: `date | orders | revenue`
 
-Uses ordersByDate array from backend
+5. **Top 5 Customers by Spend**
 
-Checkout Funnel (Custom Events)
+   * Uses `totalSpent` from `Customer` table
+   * Smart label:
 
-Cards for:
+     * use `firstName + lastName` if present
+     * else `email`
+     * else `Customer #<id>`
 
-Checkouts Started
+6. **Recent funnel events (Bonus)**
 
-Cart Abandoned
+   * Separate card (`RecentEventsCard.tsx`) calling `/api/events/recent`
+   * Shows last 10 events with:
 
-Checkouts Completed
+     * time, event type, customer/cart info, items count
 
-Checkout → Order Conversion (%)
+### UI Styling
 
-Counts computed in backend using aggregated CustomEvents.
+* Dark **glassmorphism shell** with neon green/blue accents
+* Left sidebar:
 
-Orders by Date
+  * Logo badge (`X`)
+  * App title and subtitle
+  * Navigation section (Dashboard)
+  * Actions: **Sync from Shopify**, **Refresh Metrics**, **Logout**
+* Right main panel:
 
-Table: date | orders | revenue
+  * Cards, charts, tables with consistent spacing & typography
+* Responsive layout with flexbox and graceful wrapping on smaller widths
+* Clear **loading** and **error** states; friendly “No data yet” messages.
 
-Top 5 Customers by Spend
+---
 
-Uses totalSpent from Customer table
+## 🛠 Setup Instructions
 
-Smart label:
+### 1. Prerequisites
 
-use firstName + lastName if present
+* Node.js (>= 18)
+* Yarn or npm
+* A PostgreSQL database (local or cloud)
+* A Shopify development store with:
 
-else email
+  * Admin API access token
+  * Ability to add a **Custom Pixel**
 
-else Customer #<id>
+### 2. Clone the Repo
 
-Recent funnel events (Bonus)
-
-Separate card (RecentEventsCard.tsx) calling /api/events/recent
-
-Shows last 10 events with:
-
-time, event type, customer/cart info, items count
-
-UI Styling
-
-Dark glassmorphism shell with neon green/blue accents
-
-Left sidebar:
-
-Logo badge (X)
-
-App title and subtitle
-
-Navigation section (Dashboard)
-
-Actions: Sync from Shopify, Refresh Metrics, Logout
-
-Right main panel:
-
-Cards, charts, tables with consistent spacing & typography
-
-Responsive layout with flexbox and graceful wrapping on smaller widths
-
-Clear loading and error states; friendly “No data yet” messages.
-
-🛠 Setup Instructions
-1. Prerequisites
-
-Node.js (>= 18)
-
-Yarn or npm
-
-A PostgreSQL database (local or cloud)
-
-A Shopify development store with:
-
-Admin API access token
-
-Ability to add a Custom Pixel
-
-2. Clone the Repo
+```bash
 git clone <your-repo-url>.git
 cd <repo-root>
+```
 
-3. Backend Setup (/backend)
+### 3. Backend Setup (`/backend`)
+
+```bash
 cd backend
 npm install
+```
 
+Create a `.env` file in `backend`:
 
-Create a .env file in backend:
-
+```env
 # Port for the backend
 PORT=4000
 
@@ -494,119 +459,107 @@ JWT_SECRET="super-secret-jwt-key"
 
 # Optional: cron schedule for background syncs (every 30 mins by default)
 SYNC_CRON_SCHEDULE="*/30 * * * *"
-
+```
 
 Run Prisma migrations:
 
+```bash
 npx prisma migrate dev --name init
-
+```
 
 Start the backend locally:
 
+```bash
 npm start
 # or: node src/server.js
+```
 
+Backend should be available at `http://localhost:4000`.
 
-Backend should be available at http://localhost:4000.
-
-4. Frontend Setup (/frontend)
+### 4. Frontend Setup (`/frontend`)
 
 In a new terminal:
 
+```bash
 cd frontend
 npm install
+```
 
+Create a `.env.local` in `frontend`:
 
-Create a .env.local in frontend:
-
+```env
 NEXT_PUBLIC_API_BASE_URL="http://localhost:4000"
-
+```
 
 Start the Next.js dev server:
 
+```bash
 npm run dev
+```
 
+Frontend will be at `http://localhost:3000`.
 
-Frontend will be at http://localhost:3000.
+### 5. Shopify Configuration
 
-5. Shopify Configuration
+1. **Admin API Token**
 
-Admin API Token
+   * In Shopify admin, create a custom app / private app with read access to **Customers** and **Orders**.
+   * Copy the **Admin API access token**.
+2. **Custom Pixel**
 
-In Shopify admin, create a custom app / private app with read access to Customers and Orders.
+   * In **Customer events / Pixels**, create a custom pixel and include the project’s pixel script.
+   * The script should:
 
-Copy the Admin API access token.
+     * read `window.location.hostname` as `shopDomain`
+     * listen to `checkout_started` and `checkout_completed`
+     * `fetch()` the backend’s public endpoints:
 
-Custom Pixel
+       * `POST https://<your-backend>/api/public/events/checkout-started`
+       * `POST https://<your-backend>/api/public/events/checkout-completed`
+3. **Register Tenant**
 
-In Customer events / Pixels, create a custom pixel and include the project’s pixel script.
+   * Open the frontend.
+   * Use **Register** form with:
 
-The script should:
+     * Email, password
+     * `shopDomain` (e.g. `xenofde-aryan.myshopify.com`)
+     * Admin API token.
+4. **Sync Data**
 
-read window.location.hostname as shopDomain
+   * Log in → Dashboard.
+   * Click **Sync from Shopify** to pull initial customers & orders.
+   * Trigger a test checkout on the storefront to create funnel events.
+   * Click **Refresh Metrics** to see updated KPIs & events.
 
-listen to checkout_started and checkout_completed
+---
 
-fetch() the backend’s public endpoints:
+## ⚙️ Known Limitations & Assumptions
 
-POST https://<your-backend>/api/public/events/checkout-started
+* **One store per tenant** – each tenant corresponds to a single Shopify shop.
+* **Token storage** – the Admin API token is stored in Postgres; in production this should be moved to a secure secrets manager.
+* **Basic error handling** – minimal retries/backoff for Shopify API rate limits; more robust retry logic would be needed in production.
+* **No multi-role RBAC** – only one user role (tenant user). No separate admin/analyst roles yet.
+* **Limited segmentation** – metrics are aggregated at store level; there’s no breakdown by product, campaign, or channel.
+* **Time zones** – currently treats dates in server time / UTC; time-zone–aware reporting could be improved.
+* **Pixel coverage** – only checkout started/completed (and optional cart abandoned). Does not yet capture view, add-to-cart or marketing attribution events.
 
-POST https://<your-backend>/api/public/events/checkout-completed
+---
 
-Register Tenant
-
-Open the frontend.
-
-Use Register form with:
-
-Email, password
-
-shopDomain (e.g. xenofde-aryan.myshopify.com)
-
-Admin API token.
-
-Sync Data
-
-Log in → Dashboard.
-
-Click Sync from Shopify to pull initial customers & orders.
-
-Trigger a test checkout on the storefront to create funnel events.
-
-Click Refresh Metrics to see updated KPIs & events.
-
-⚙️ Known Limitations & Assumptions
-
-One store per tenant – each tenant corresponds to a single Shopify shop.
-
-Token storage – the Admin API token is stored in Postgres; in production this should be moved to a secure secrets manager.
-
-Basic error handling – minimal retries/backoff for Shopify API rate limits; more robust retry logic would be needed in production.
-
-No multi-role RBAC – only one user role (tenant user). No separate admin/analyst roles yet.
-
-Limited segmentation – metrics are aggregated at store level; there’s no breakdown by product, campaign, or channel.
-
-Time zones – currently treats dates in server time / UTC; time-zone–aware reporting could be improved.
-
-Pixel coverage – only checkout started/completed (and optional cart abandoned). Does not yet capture view, add-to-cart or marketing attribution events.
-
-🚀 Next Steps / Productionization Ideas
+## 🚀 Next Steps / Productionization Ideas
 
 If this were taken to production, next iterations would include:
 
-Proper Shopify OAuth installation flow instead of manually pasting Admin tokens.
+* Proper **Shopify OAuth installation flow** instead of manually pasting Admin tokens.
+* Moving secrets to a **secrets manager** and adding stricter **rate limiting** and request logging.
+* Replacing `node-cron` with a dedicated **job queue** (e.g. BullMQ + Redis) for reliable sync and retries.
+* Adding **segmentation & advanced analytics**:
 
-Moving secrets to a secrets manager and adding stricter rate limiting and request logging.
+  * cohorts, RFM, campaign/source breakdowns, product-level funnels.
+* Improving **observability**:
 
-Replacing node-cron with a dedicated job queue (e.g. BullMQ + Redis) for reliable sync and retries.
+  * structured logs, metrics on sync latency, pixel error monitoring.
+* Hardening the **frontend** with tests, better accessibility, and more export/share options.
 
-Adding segmentation & advanced analytics:
+---
+<img width="1850" height="858" alt="Screenshot 2025-12-04 203737" src="https://github.com/user-attachments/assets/1499aaa6-192e-4dc8-88dc-1aaeb8047574" />
 
-cohorts, RFM, campaign/source breakdowns, product-level funnels.
-
-Improving observability: 
-
-structured logs, metrics on sync latency, pixel error monitoring.
-
-Hardening the frontend with tests, better accessibility, and more export/share options.
